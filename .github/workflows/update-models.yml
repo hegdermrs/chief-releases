@@ -1,0 +1,28 @@
+name: Update model lineups
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh models.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node update-models.mjs
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet models.json; then
+            git config user.name 'donna-models-bot'
+            git config user.email 'actions@users.noreply.github.com'
+            git add models.json
+            git commit -m 'models.json: automatic refresh'
+            git push
+          else
+            echo 'No lineup changes.'
+          fi
